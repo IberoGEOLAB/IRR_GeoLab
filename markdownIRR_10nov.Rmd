@@ -1,0 +1,136 @@
+---
+title: "Mapa Interactiva"
+author: "Thibaut Plassot"
+date: "2/11/2020"
+
+knit: (function(input_file, encoding) {
+  out_dir <- 'docs';
+  rmarkdown::render(input_file,
+ encoding=encoding,
+ output_file=file.path(dirname(input_file), out_dir, 'index.html'))})
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+ 
+##  Índice relativo de ruralidad (IRR)
+  
+El índice relativo de ruralidad (IRR) es un índice agregado desarrollado por Waldorf (2006). Una de las ventajas de esta metodología es que ha sido usada y probada en investigaciones de diferentes áreas para definir el grado de ruralidad. Entre otros trabajos, destaca el de De Montis, Caschili y Trogu (2012) para estudiar la accesibilidad y el aislamiento; el de Gallardo y Scammahorn (2012) para analizar la formación de actitudes empresariales; y el de Heflin y Kathleen (2012) para identificar territorios con necesidades en servicios humanos. Este índice es multidimensional y puede ser calculado a diferentes escalas; originalmente fue creado para el nivel de condados, pero también se ha aproximado a grupos de condados (Muhlenkamp y Waldorf, 2008). Además, es una medida continua y no dicotómica, y considera la ruralidad como un concepto relativo, es decir, cada territorio tiene asociado un grado de ruralidad relativo respecto al grado de los otros territorios (véase el anexo 1).  
+
+
+
+El índice genera un continuo multidimensional para medir el grado de ruralidad mediante cuatro pasos:
+
+- i) Identificar las dimensiones de la ruralidad; 
+
+- ii) Seleccionar las variables adecuadas para representar cada una de las dimensiones; 
+
+- iii) Reescalar las variables con el fin de hacerlas comparativas entre ellas de manera similar a lo que se hace para calcular el índice de desarrollo humano (IDH);
+
+- iv) Realizar la agregación con la metodología del IDH que utilizaba el PNUD hasta 2010. 
+
+Las dimensiones de ruralidad que Waldorf (2006) elige son, en el nivel de condado, el tamaño poblacional del condado y su densidad debido a que esos indicadores han sido utilizados en la mayoría de las tipologías, y la lejanía o el aislamiento del condado, considerando que es un buen criterio de caracterización de lo rural; por último, la autora integra el porcentaje de población que vive en áreas urbanas.
+
+Los resultados se muestran en el mapa 2. Las áreas de menor ruralidad se muestran en amarillo y permiten apreciar las zonas urbanas más conocidas de México: el centro, algunas localidades en las costas y la zona norte del país. El cálculo realizado a nivel de municipio no permite una apreciación fina de la ruralidad. Por ejemplo, todos los municipios de Baja California aparecen como totalmente urbanos. Hay pocos municipios con el color verde más intenso (IRR superior al 90%) y predominan situaciones con IRR superiores al 50%. 
+
+
+
+```{r, message=FALSE, warning=FALSE, , echo=FALSE, include=FALSE, paged.print=FALSE}
+
+library(rgdal)
+library(leaflet)
+library(htmltools)
+
+categIRR<- readOGR("C:/Users/DELL/Downloads/MapIrr_shape/MapIrr_shape.shp",
+                   layer = "MapIrr_shape", GDAL1_integer64_policy = FALSE)
+
+
+bins <- c(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8)
+
+categIRR$mergeirr_R <-round(categIRR$mergeirr_R, digits=2)
+categIRR$AREA <-round(categIRR$AREA, digits=2)
+catcat<-as.data.frame(categIRR, fileEncoding = "UTF-8")
+
+catcat$label<-as.character(catcat$mergeirr_R)
+catcat$label3<-as.character(catcat$NOM_ENT)
+catcat$label4<-as.character(catcat$NOM_MUN)
+
+catcat$label<-paste0("IRR:", catcat$label  , "| Entidad:",catcat$label3 , "| Municipio:",catcat$label4)
+
+pal <- colorBin("viridis", domain = categIRR$mergeirr_R, bins = bins, reverse = TRUE)
+pal
+
+map_categIRR <- leaflet(categIRR) %>%
+  addTiles() %>%
+  addPolygons( weight = 0.0, smoothFactor = 0.5, stroke = TRUE, 
+               opacity = 1.0, fillOpacity = 0.8,
+               fillColor = ~pal(mergeirr_R),  color = "blue",
+               highlightOptions = highlightOptions(color = "white", weight = 0.8,
+                                                   bringToFront = TRUE),  
+               label =~catcat$label) %>%
+  addLegend("bottomright", pal = pal, values = bins,
+            title = "IRR (2010)",
+            labFormat = labelFormat(prefix = ""),
+            opacity = 1
+  )
+
+map_categIRR
+
+
+```
+
+- <span style="color:green">Mapa 2: México, Indice Relativo de Ruralidad medias geométricas a nivel municipal, 2010 </span>
+
+```{r, message=FALSE, warning=FALSE, , echo=FALSE,  paged.print=FALSE}
+
+map_categIRR
+
+```
+
+![<font size="1">Fuente: Elaboración propia, sobre la base de B. Waldorf, A Continuos Multi-Dimensional Measure of Rurality: Moving Beyond Threshold Measures, Annual Meeting of American Agricultural Economics Associations, Long Island, California, 2006 y B. Waldorf y A. Kim, "Defining and measuring rurality in the US: From typologies to continuous indices”, Paper presented at the Workshop of Rationalizing Rural Area Classifications, Washington, D. C., 2015 y datos del Instituto Nacional de Estadística y Geografía (INEGI). Nota: El IRRMG-MUNICIPIOS está definido con base en cuatro variables: población, densidad, porcentaje de población urbana y distancia a una ciudad de al menos 50.000 habitantes desde la cabecera municipal. Está agregado como el indicador IDH actual del PNUD (media geométrica de los cuatro componentes). Varía desde 0 (municipio totalmente urbano) a 1 (municipio totalmente rural). </font>] 
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+library(rgdal)
+library(leaflet)
+library(htmltools)
+library(ggplot2)
+library(dplyr)
+
+categIRR<- readOGR("F:/Map Interactiv IRR/MapIrr_shape.shp",
+                   layer = "MapIrr_shape", GDAL1_integer64_policy = FALSE)
+
+
+bins <- c(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8)
+
+categIRR$mergeirr_R <-round(categIRR$mergeirr_R, digits=2)
+categIRR$AREA <-round(categIRR$AREA, digits=2)
+catcat<-as.data.frame(categIRR, fileEncoding = "UTF-8")
+
+catcat %>%
+  filter(!is.na(mergeirr_R)) %>%
+  ggplot() +
+  aes(x = CVE_ENT, y = mergeirr_R) +
+  geom_boxplot(fill = "#1f9e89") +
+  labs(x = "Entidad", y = "IRR") +
+  ggthemes::theme_economist()
+
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+- Standard font
+- <span style="color:red">Change the font colour</span>
+- <font size="1">This is some text size 1!</font>
+- <font size="1">This is some text size 1!</font>
+- <font size="2">This is some text size 2!</font>
+- <font size="3">This is some text size 3!</font>
+- <font size="4">This is some text size 4!</font>
+- <font size="5">This is some text size 5!</font>
+
